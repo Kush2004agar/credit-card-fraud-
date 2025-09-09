@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  fraud-detection-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+      - ./logs:/app/logs
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    command: python src/api.py
+    restart: unless-stopped
+
+  fraud-detection-dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+    environment:
+      - ENVIRONMENT=production
+    command: streamlit run src/dashboard.py --server.port 8501 --server.address 0.0.0.0
+    depends_on:
+      - fraud-detection-api
+    restart: unless-stopped
+
+  # Optional: Add a database for storing predictions
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: fraud_detection
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
